@@ -13,6 +13,7 @@ using WebContacts.DL.Models;
 
 namespace WebContacts.BL.Repositories.MessageRepo
 {
+    //test Github
     public  class MessageRepository :  GenericRepository<Message>, IMessageRepository
     {
         public MessageRepository(ApplicationDbContext _dbContext) : base(_dbContext)
