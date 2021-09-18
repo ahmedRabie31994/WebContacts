@@ -1,0 +1,23 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 style="color:#808080" class="display-4">Welcome to our website</h1>
+</div>
+<script src="~/assets/js/lib/jquery.min.js"></script>
+<script src="~/assets/js/lib/jquery.min.js"></script>
+<script>
+$(document).ready(function () {
+        debugger;
+
+    var x ='@ViewBag.message';
+    if (x == "Added") {
+        alert("Your message has been submit ")
+    }
+    else if (x == "Faild") {
+        alert("Faild to submit Your Message Try Again later");
+        }
+
+            });
+</script>

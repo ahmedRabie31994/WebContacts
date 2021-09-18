@@ -1,0 +1,39 @@
+         @*<a style="font:bold; font-weight:400;font-size:x-large" title="Transactions" class="btn btn-lg" href="/product/GetProductDetailHistory?ProductId=@item.Id"><span class="ti ti-list"></span></a>*@
+                                                        <div class="text-center">
+
+
+                                                            <a type="button" class="btn btn-outline btn-primary" title="Purchase Details" data-toggle="modal" onclick="GetDetails(@item.Id)" href="#addRequestSource"><i class="ti ti-info"></i>   </a>
+
+                                                            <!--Delete modal-->
+                                                            @using (Html.BeginForm("Delete", "Purchase", new { PurchaseId = item.Id }, FormMethod.Post))
+                                                            {
+                                                                var deleteModal = "deleteModal" + item.Id;
+                                                                <a class="btn btn-outline btn-danger" data-toggle="modal" data-target="#@deleteModal"><i class="fa fa-trash"></i></a>
+                                                                <!-- Modal -->
+                                                                <div class="modal fade" id="@deleteModal" tabindex="-1" role="dialog" data-keyboard="false" aria-labelledby="myModalLabel">
+                                                                    <div class="modal-dialog modal-xs" role="document">
+                                                                        <div class="modal-content">
+                                                                            <div class="modal-header" style="vertical-align: central">
+                                                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="text-align: left">
+                                                                                    <span aria-hidden="true">&times;</span>
+                                                                                </button>
+                                                                                <h4 class="modal-title" id="myModalLabel"> Approve </h4>
+
+                                                                            </div>
+                                                                            <div class="modal-body">
+                                                                                Are You sure To delete this item ?
+                                                                            </div>
+                                                                            <div class="modal-footer">
+                                                                                <input type="submit" value="OK" class="btn btn-success" />
+                                                                                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            }                                                             <a type="button" class="btn btn-outline btn-success" title="Paying For Order" data-toggle="modal" onclick="PayForPurchase(@Json.Encode(item))" href="#PayForPurchase"><i class="ti ti-receipt"></i>   </a>
+                                                            <a type="button" class="btn btn-outline btn-warning" title="Show Payments" data-toggle="modal" onclick="ShowPayments(@item.Id)" href="#ShWPaymentsModal"><i class="ti ti-agenda"></i>   </a>
+                                                        </div>
+
+
+
+                                                    </td>

@@ -1,0 +1,239 @@
+using AutoMapper;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using RAQEB.DataAccess;
+using RAQEB.DataAccess.Models;
+using RAQEB.DTO;
+using RAQEB.Helper.Common;
+using RAQEB.WEB.Common;
+using RAQEB.WEB.ViewModels;
+using SmartBreadcrumbs.Attributes;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
+
+namespace RAQEB.WEB.Controllers
+{
+    public class DepartmentController : Controller
+    {
+        public DepartmentController(IMapper mapper, IWebHostEnvironment hostingEnvironment)
+        {
+            _mapper = mapper;
+            _hostingEnvironment = hostingEnvironment;
+        }
+        HttpClientInit _api = new HttpClientInit();
+        private readonly IMapper _mapper;
+        private readonly IWebHostEnvironment _hostingEnvironment;
+
+        public async Task<IActionResult> Index()
+        {
+            if (Request.Cookies["access_token"] != null)
+            {
+                List<Department_VM> vm = new List<Department_VM>();
+                HttpClient client = _api.Initial();
+                var token = Request.Cookies["access_token"];
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                HttpResponseMessage res = await client.GetAsync($"api/Department?IsActive=true");
+                if (res.IsSuccessStatusCode)
+                {
+                    var result = await res.Content.ReadAsAsync<ResultOfAction>();
+                    var lastRes = result.Response.ToString();
+                    vm = JsonConvert.DeserializeObject<List<Department_VM>>(lastRes);
+                    HttpClient clientUser = _api.Initial();
+                    foreach (var item in vm)
+                    {
+                        item.auditor = await GlobalMethods.formatAuditing(item.CreatedBy, item.CreateDate, item.UpdatedBy, item.UpdateDate,token);
+
+                    }
+
+                }
+
+                return View(vm); 
+            }
+            return View();
+        }
+        public async Task<IActionResult> GetAllDepartments()
+        {
+            if (Request.Cookies["access_token"] != null)
+            {
+                List<Department_VM> vm = new List<Department_VM>();
+                HttpClient client = _api.Initial();
+                var token = Request.Cookies["access_token"];
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                HttpResponseMessage res = await client.GetAsync($"api/Department?IsActive=true");
+                if (res.IsSuccessStatusCode)
+                {
+                    var result = await res.Content.ReadAsAsync<ResultOfAction>();
+                    var lastRes = result.Response.ToString();
+                    vm = JsonConvert.DeserializeObject<List<Department_VM>>(lastRes);
+                    HttpClient clientUser = _api.Initial();
+                    foreach (var item in vm)
+                    {
+                        item.auditor = await GlobalMethods.formatAuditing(item.CreatedBy, item.CreateDate, item.UpdatedBy, item.UpdateDate, token);
+
+                    }
+
+                }
+
+                return View("DepartmentList", vm);
+            }
+            return View();
+        }
+        [HttpPost]
+        public async Task<JsonResult> AddDepartment([FromBody]Department_VM model)
+        {
+            if (Request.Cookies["access_token"] != null)
+            {
+                model.CreatedBy = GlobalMethods.GetUserIdFromToken(Request.Cookies["access_token"]);
+                model.CreateDate = DateTime.Now;
+                    if (!string.IsNullOrEmpty(model.LocalName))
+                    {
+                    HttpClient client = _api.Initial();
+
+                    var token = Request.Cookies["access_token"];
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                    
+                    var modelMap = _mapper.Map<DepartmentDto>(model);
+                        var content = JsonContent.Create(modelMap);
+                        HttpResponseMessage response = await client.PostAsync($"http://localhost:55315/api/Department/AddDepartment/", content);
+                        if (response.IsSuccessStatusCode)
+                        {
+                        var actionResult = await response.Content.ReadAsAsync<ResultOfAction>();
+                        var resultDto = JsonConvert.DeserializeObject<DepartmentDto>(actionResult.Response.ToString());
+
+                        return Json(resultDto);
+                        }
+                    }
+                
+            }      
+            return null;
+        }
+        [HttpGet]
+        public async Task<JsonResult> Details(int id)
+        {
+            if (Request.Cookies["access_token"] != null)
+            {
+                var token = Request.Cookies["access_token"];
+                Department_VM vm = new Department_VM();
+                HttpClient client = _api.Initial();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                HttpResponseMessage res = await client.GetAsync($"api/Department/GetDepartment/{id}");
+                if (res.IsSuccessStatusCode)
+                {
+                    var result = await res.Content.ReadAsAsync<ResultOfAction>();
+
+                    vm = JsonConvert.DeserializeObject<Department_VM>(result.Response.ToString());
+                    HttpClient clientUser = _api.Initial();
+                    HttpResponseMessage auditorResult = await clientUser.GetAsync($"api/User/GetUser/{vm.CreatedBy}");
+                    if (auditorResult.IsSuccessStatusCode)
+                    {
+
+                        //VM_User userInfo = new VM_User();
+                        ResultOfAction resUserInfo = await auditorResult.Content.ReadAsAsync<ResultOfAction>();
+                        var userJson = JsonConvert.DeserializeObject<User_VM>(resUserInfo.Response.ToString());
+                        vm.auditor = userJson.UserName;
+
+
+
+                    }
+                }
+                return Json(vm);
+            }
+
+            return Json(null);
+        }
+        public async Task<JsonResult> Edit([FromBody] Department_VM model)
+        {
+            if (Request.Cookies["access_token"] != null)
+            {
+                var token = Request.Cookies["access_token"];
+                model.UpdatedBy = GlobalMethods.GetUserIdFromToken(Request.Cookies["access_token"]);
+                model.UpdateDate = DateTime.Now;
+                if (ModelState.IsValid)
+                {
+                    Department vm = new Department();
+                    HttpClient client = _api.Initial();
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                    HttpResponseMessage res = await client.GetAsync($"api/Department/GetDepartment/{model.Id}");
+                    if (res.IsSuccessStatusCode)
+                    {
+                        var resModel = await res.Content.ReadAsAsync<ResultOfAction>();
+
+                        var mapDto = _mapper.Map<DepartmentDto>(model);
+                        mapDto.IsActive = true;
+                        mapDto.IsDeleted = false;
+                        var content = JsonContent.Create(mapDto);
+
+                        HttpResponseMessage response = await client.PutAsync($"api/Department/UpdateDepartment/{model.Id}", content);
+                        if (response.IsSuccessStatusCode)
+                        {
+
+                            
+
+                            var resultDto = JsonConvert.DeserializeObject<DepartmentDto>(resModel.Response.ToString());
+
+                            return Json(resultDto);
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+        [HttpPost]
+        public async Task<JsonResult> DeleteDepartment(int DepartmentId)
+        {
+            if (Request.Cookies["access_token"] != null)
+            {
+                if (DepartmentId > 0)
+                {
+                    var token = Request.Cookies["access_token"];
+                    int auditor = GlobalMethods.GetUserIdFromToken(token);
+
+                    if (auditor > 0)
+                    {
+                        HttpClient client = _api.Initial();
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                      var userId =  GlobalMethods.GetUserIdFromToken(Request.Cookies["access_token"]);
+                        //DeleteParam deleteParam = new DeleteParam { 
+                        //    ObjectId=UserId,
+                        //    AuditorId=auditor
+                        //};
+                        //var Content = JsonContent.Create(deleteParam);
+                        var res = await client.DeleteAsync($"{Global.BackEndUrl}/Department/DeleteDepartment/{DepartmentId}/{userId}");
+                        var deleteResult = await res.Content.ReadAsAsync<ResultOfAction>();
+                        if (res.IsSuccessStatusCode)
+                        {
+
+                            var deleteddeptDto = JsonConvert.DeserializeObject<DepartmentDto>(deleteResult.Response.ToString());
+
+                            return Json("Department [" + deleteddeptDto.LocalName + "] deleted");
+                        }
+                        else
+                        {
+                            return Json(BadRequest(deleteResult.ErrorMessage));
+                        }
+                    }
+                    else
+                    {
+                        return Json(BadRequest("Invalid auditor"));
+                    }
+                }
+                else
+                {
+                    return Json(BadRequest("Department is not recognized, logoff and login again"));
+                }
+            }
+            else
+            {
+                return Json(BadRequest());
+            }
+        }
+    }
+}
